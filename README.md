@@ -15,12 +15,16 @@ A decentralized P2P networking library written in Rust. It features strict type-
 
 ## Quick Start
 
-use aether_void_net::node::NetNode;use aether_void_net::options::{NetAddr, NetPort};use aether_void_net::options::{SessionRequest, Id};use aether_void_net::hub::{PeerEndpoints, SessionHub};
+```rust
+use aether_void_net::node::NetNode;
+use aether_void_net::options::{NetAddr, NetPort};
+use aether_void_net::options::{SessionRequest, Id};
+use aether_void_net::hub::{PeerEndpoints, SessionHub};
 use aether_void_net::utils::create_addr;
+
 const MY_IP: &str = "127.0.0.1";
 
 
-```rust
 #[tokio::main]async fn main() {
     let net_node = NetNode::default_arc().await.unwrap();
 
