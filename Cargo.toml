@@ -1,0 +1,16 @@
+[package]
+name = "aether_void_net"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.103"
+rkyv = "0.8.16"
+tokio = { version = "1.52.3", features = [
+    "net",
+    "macros",
+    "io-util",
+    "time",
+    "rt-multi-thread",
+    "sync"
+] }
