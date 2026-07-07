@@ -41,7 +41,7 @@ async fn main() {
 
                 println!("Message: {:?} from: {}", message.payload, message.sender);
             };
-        }
+        };
     });
 
     loop {

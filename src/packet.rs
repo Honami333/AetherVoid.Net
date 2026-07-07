@@ -28,13 +28,13 @@ impl<T: Archive> PacketType for T {
 }
 
 pub struct Packet {
-    pub payload: Vec<u8>,
+    pub payload: bytes::Bytes,
     pub sender: SocketAddr,
 }
 
 impl Packet {
-    pub fn new(payload: &[u8], sender: SocketAddr) -> Self {
-        Self { payload: payload.to_vec(), sender }
+    pub fn new(payload: bytes::Bytes, sender: SocketAddr) -> Self {
+        Self { payload, sender }
     }
 }
 

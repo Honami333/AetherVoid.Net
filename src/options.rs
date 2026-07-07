@@ -1,3 +1,8 @@
+use rkyv::Archive;
+use rkyv::Serialize;
+use rkyv::Deserialize;
+
+
 pub enum NetAddr {
     Default,
     New(String)
@@ -16,6 +21,14 @@ pub enum NetPort {
 pub enum ChannelCap {
     Default,
     New(usize),
+}
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
+#[derive(Archive, Serialize, Deserialize)]
+pub enum SessionRequest {
+    CreatePeer { id: Id },
+    Connect { id: Id },
+    
 }
 
 pub struct NodeConfig {
@@ -80,12 +93,4 @@ impl Id {
     pub fn new(id: u32) -> Self {
         Self(id)
     }
-}
-
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
-pub enum SessionRequest {
-    CreatePeer { id: Id },
-    Connect { id: Id },
-    
 }

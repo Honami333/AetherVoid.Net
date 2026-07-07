@@ -5,6 +5,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::iter::zip;
 
+use rkyv::Archive;
+use rkyv::Serialize;
+use rkyv::Deserialize;
+
 use anyhow::{anyhow, Result};
 
 use crate::options::*;
@@ -94,8 +98,7 @@ impl SessionHub {
         let endpoints = self.get_peer(id).await;
 
         if let Some(peer) = endpoints {
-            let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&peer)?;
-            net_node.send_to(&bytes, addr, peer).await?;
+            net_node.send_to(&peer, addr).await?;
 
             Ok(format!("Successful connection to the peer {:?}", id))
         } else {
@@ -105,7 +108,7 @@ impl SessionHub {
 }
 
 #[derive(Debug, Clone, Copy)]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(Archive, Serialize, Deserialize)]
 pub struct PeerEndpoints {
     pub main_peer_one: Option<SocketAddr>,
     pub main_peer_two: Option<SocketAddr>

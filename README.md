@@ -20,12 +20,14 @@ use aether_void_net::node::NetNode;
 use aether_void_net::options::{NetAddr, NetPort};
 use aether_void_net::options::{SessionRequest, Id};
 use aether_void_net::hub::{PeerEndpoints, SessionHub};
+
 use aether_void_net::utils::create_addr;
 
 const MY_IP: &str = "127.0.0.1";
 
 
-#[tokio::main]async fn main() {
+#[tokio::main]
+async fn main() {
     let net_node = NetNode::default_arc().await.unwrap();
 
     let hub = SessionHub::default_arc();
@@ -62,7 +64,7 @@ const MY_IP: &str = "127.0.0.1";
 
                 println!("Message: {:?} from: {}", message.payload, message.sender);
             };
-        }
+        };
     });
 
     let net_node_clone = net_node.share();
@@ -84,16 +86,14 @@ const MY_IP: &str = "127.0.0.1";
         NetPort::Default
     );
 
-    let message_string = SessionRequest::CreatePeer { id: Id::new(1) };
-    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&message_string).unwrap();
+    let message = SessionRequest::CreatePeer { id: Id::new(1) };
 
-    net_node.send_to(&bytes, my_addr, message_string).await.unwrap();
+    net_node.send_to(&message, my_addr).await.unwrap();
     
-    let message_string = SessionRequest::Connect { id: Id::new(1) };
-    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&message_string).unwrap();
+    let message = SessionRequest::Connect { id: Id::new(1) };
 
     loop {
-        net_node.send_to(&bytes, my_addr, message_string).await.unwrap();
+        net_node.send_to(&message, my_addr).await.unwrap();
 
         tokio::time::sleep(std::time::Duration::from_secs(1)).await; 
     };

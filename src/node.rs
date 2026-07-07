@@ -8,13 +8,17 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::collections::HashMap;
 
-use rkyv::{Archive, Deserialize};
-use rkyv::api::high::HighDeserializer;
+use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::api::high::{HighDeserializer, HighSerializer};
+use rkyv::ser::allocator::ArenaHandle;
 use rkyv::api::high::HighValidator;
 use rkyv::bytecheck::CheckBytes;
+use rkyv::util::AlignedVec;
 use rkyv::rancor::Error;
 
 use anyhow::{Result, anyhow};
+
+use bytes::BytesMut;
 
 use crate::options::*;
 use crate::packet::*;
@@ -69,24 +73,25 @@ impl NetNode {
 
 impl NetNode {
     pub async fn channel_run(&self) -> Result<()> {
-        let mut buf = vec![0_u8; self.buffer_size];
+        let mut buf = BytesMut::with_capacity(self.buffer_size);
 
         loop {
-            let (len, addr) = self.socket.recv_from(&mut buf).await?;
-
-            let incoming_data = &buf[..len];
+            let (len, addr) = self.socket.recv_buf_from(&mut buf).await?;
 
             if len < 8 { continue; };
 
-            let (packet_hash, packet_data) = incoming_data.split_at(8);
+            let mut incoming_data = buf.split_to(len).freeze();
 
-            let packet_type = u64::from_le_bytes(packet_hash.try_into()?);
+            let packet_data = incoming_data.split_off(8);
+            let packet_hash = incoming_data;
+
+            let packet_type = u64::from_le_bytes(packet_hash[..8].try_into()?);
 
             {
-                let mut channels = 
-                    self.channels.write().await;
+                let channels = 
+                    self.channels.read().await;
                 
-                if let Some(sender) = channels.get_mut(&packet_type) {
+                if let Some(sender) = channels.get(&packet_type) {
                     let packet = Packet::new(packet_data, addr);
 
                     sender.try_send(packet)
@@ -139,13 +144,18 @@ impl NetNode {
         Some(unpacked_packet)
     }
 
-    pub async fn send_to<T>(&self, msg: &[u8], addr: SocketAddr, msg_type: T) -> Result<()> 
+    pub async fn send_to<T>(&self, msg: &T, addr: SocketAddr) -> Result<()> 
     where 
-        T: PacketType
+        T: for<'a> Serialize<HighSerializer<AlignedVec, ArenaHandle<'a>, Error>>
     {
-        let message = mark_packet(msg, msg_type.packet_hash_self());
+        let mut bytes = AlignedVec::new();
 
-        self.socket.send_to(&message, addr).await?;
+        bytes.extend_from_slice(&msg.packet_hash_self().to_le_bytes());
+
+        let bytes = rkyv::api::high::to_bytes_in(msg, bytes)?;
+
+        self.socket.send_to(&bytes, addr).await?;
+
         Ok(())
     }
 }
